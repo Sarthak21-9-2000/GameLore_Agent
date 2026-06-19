@@ -9,3 +9,4 @@ __pycache__/
 
 # Chroma cache files
 *.sqlite3
+chroma_db/
