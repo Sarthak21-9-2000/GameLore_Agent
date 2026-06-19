@@ -1,0 +1,306 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎮 GameLore Agent</title>
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:'Segoe UI',sans-serif;
+}
+
+body{
+    min-height:100vh;
+    color:white;
+    background:
+        radial-gradient(circle at top left,#312e81,#0f172a 40%),
+        radial-gradient(circle at bottom right,#0891b2,#0f172a 40%);
+}
+
+.container{
+    max-width:1200px;
+    margin:auto;
+    padding:40px 20px;
+}
+
+.logo{
+    text-align:center;
+    margin-bottom:30px;
+}
+
+.logo h1{
+    font-size:3rem;
+    background:linear-gradient(90deg,#8b5cf6,#06b6d4);
+    -webkit-background-clip:text;
+    -webkit-text-fill-color:transparent;
+}
+
+.logo p{
+    color:#94a3b8;
+    margin-top:10px;
+}
+
+.hero{
+    background:rgba(30,41,59,.85);
+    border:1px solid #334155;
+    border-radius:20px;
+    padding:30px;
+    text-align:center;
+    margin-bottom:40px;
+    backdrop-filter:blur(12px);
+}
+
+.hero h2{
+    color:#8b5cf6;
+    margin-bottom:10px;
+}
+
+.hero p{
+    color:#cbd5e1;
+}
+
+.anime-gallery{
+    display:flex;
+    justify-content:center;
+    gap:25px;
+    flex-wrap:wrap;
+    margin-bottom:40px;
+}
+
+.anime-card{
+    width:220px;
+    background:#1e293b;
+    border:1px solid #334155;
+    border-radius:20px;
+    overflow:hidden;
+    transition:.3s;
+}
+
+.anime-card:hover{
+    transform:translateY(-8px);
+    border-color:#8b5cf6;
+    box-shadow:0 15px 35px rgba(139,92,246,.35);
+}
+
+.anime-card img{
+    width:100%;
+    height:320px;
+    object-fit:cover;
+    display:block;
+}
+
+.anime-card h3{
+    text-align:center;
+    padding:15px;
+    color:white;
+}
+
+form{
+    display:flex;
+    flex-direction:column;
+    gap:15px;
+}
+
+textarea{
+    width:100%;
+    min-height:150px;
+    background:#1e293b;
+    border:1px solid #334155;
+    border-radius:16px;
+    color:white;
+    padding:20px;
+    font-size:16px;
+    resize:none;
+}
+
+textarea:focus{
+    outline:none;
+    border-color:#8b5cf6;
+}
+
+button{
+    border:none;
+    padding:15px;
+    border-radius:12px;
+    background:linear-gradient(90deg,#8b5cf6,#06b6d4);
+    color:white;
+    font-size:16px;
+    font-weight:600;
+    cursor:pointer;
+}
+
+button:hover{
+    opacity:.95;
+}
+
+.loading{
+    display:none;
+    text-align:center;
+    color:#94a3b8;
+}
+
+.spinner{
+    width:40px;
+    height:40px;
+    border:4px solid #334155;
+    border-top:4px solid #8b5cf6;
+    border-radius:50%;
+    margin:auto;
+    animation:spin 1s linear infinite;
+}
+
+@keyframes spin{
+    from{transform:rotate(0deg);}
+    to{transform:rotate(360deg);}
+}
+
+.answer-box{
+    margin-top:30px;
+    background:rgba(30,41,59,.9);
+    border:1px solid #334155;
+    border-radius:20px;
+    padding:25px;
+}
+
+.answer-title{
+    color:#8b5cf6;
+    font-size:1.4rem;
+    margin-bottom:10px;
+}
+
+.source-badge{
+    display:inline-block;
+    background:#334155;
+    color:#e2e8f0;
+    padding:6px 12px;
+    border-radius:20px;
+    margin-bottom:15px;
+}
+
+.answer-content{
+    color:#e2e8f0;
+    line-height:1.8;
+    white-space:pre-wrap;
+}
+
+.footer{
+    margin-top:50px;
+    text-align:center;
+    color:#64748b;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="logo">
+        <h1>🎮 GameLore Agent</h1>
+        <p>Anime & Gaming Lore Assistant powered by Groq + ChromaDB</p>
+    </div>
+
+    <div class="hero">
+        <h2>⚔️ Explore Legendary Worlds</h2>
+        <p>
+            Ask about Naruto, Gojo, Sukuna,
+            Demon Slayer, Elden Ring,
+            One Piece, Bleach and more.
+        </p>
+    </div>
+
+    <div class="anime-gallery">
+
+        <div class="anime-card">
+            <img src="{{ url_for('static', filename='images/Naruto.png') }}">
+            <h3>Naruto</h3>
+        </div>
+
+        <div class="anime-card">
+            <img src="{{ url_for('static', filename='images/Gojo.png') }}">
+            <h3>Gojo</h3>
+        </div>
+
+        <div class="anime-card">
+            <img src="{{ url_for('static', filename='images/Sukuna.png') }}">
+            <h3>Sukuna</h3>
+        </div>
+
+        <div class="anime-card">
+            <img src="{{ url_for('static', filename='images/Tanjiro.png') }}">
+            <h3>Tanjiro</h3>
+        </div>
+
+    </div>
+
+    <form method="POST" id="askForm">
+
+        <textarea
+            name="question"
+            placeholder="Ask a lore question..."
+        >{{ question }}</textarea>
+
+        <button type="submit">
+            ⚡ Ask GameLore Agent
+        </button>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p style="margin-top:10px;">
+                Searching the lore database...
+            </p>
+        </div>
+
+    </form>
+
+    {% if answer %}
+
+    <div class="answer-box">
+
+        <div class="answer-title">
+            ✨ Answer
+        </div>
+
+        {% if source %}
+        <div class="source-badge">
+            Source: {{ source }}
+        </div>
+        {% endif %}
+
+        <div class="answer-content">
+            {{ answer }}
+        </div>
+
+    </div>
+
+    {% endif %}
+
+    <div class="footer">
+        Powered by Flask • Groq • LangChain • ChromaDB • DuckDuckGo
+    </div>
+
+</div>
+
+<script>
+
+document
+.getElementById("askForm")
+.addEventListener("submit",function(){
+
+    document.getElementById("loading")
+    .style.display="block";
+
+});
+
+</script>
+
+</body>
+</html>
+```
