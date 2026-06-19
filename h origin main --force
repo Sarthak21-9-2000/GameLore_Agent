@@ -1,0 +1,22 @@
+* [33m91aea30[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m add requirements.txt
+* [33m727cf12[m Fix Render timeout and RAG
+* [33mfc3cc4b[m Show traceback in browser
+* [33m8c3ae32[m Test Chroma without Groq
+* [33ma837727[m Restore RAG without DuckDuckGo
+* [33mdc09bcb[m Debug agent
+* [33m18c609b[m Add debug logging
+* [33m339afbd[m db changes
+* [33mf29b1b0[m Add Render RAG support
+* [33mc2877bd[m Add vector database
+* [33m5bb8ab8[m app.py changes
+* [33m5474501[m Update image paths for anime characters
+* [33mb4c4d5f[m added flask
+* [33m7ae1310[m modified:   README.md
+* [33m35f5358[m Modified Readme.md
+* [33m10f1a34[m Add Render deployment configuration
+* [33mfd8a711[m Add deployment configuration
+* [33ma56dce4[m Update README and gitignore
+* [33mc3dd241[m Update README
+* [33mfacd7fc[m Update README with project details and installation guide
+* [33m8686aec[m Remove ChromaDB from Git
+* [33m4750196[m Initial GameLore Agent
