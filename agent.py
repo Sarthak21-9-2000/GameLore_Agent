@@ -1,208 +1,185 @@
-
 from dotenv import load_dotenv
+import os
 
 from langchain_groq import ChatGroq
 from langchain_chroma import Chroma
-from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.tools import DuckDuckGoSearchRun
-
-# -----------------------------
+# -----------------------------------
 # Load Environment Variables
-# -----------------------------
+# -----------------------------------
 
 load_dotenv()
 
-# -----------------------------
-# Configuration
-# -----------------------------
+# -----------------------------------
+# Config
+# -----------------------------------
 
 DB_DIR = "chroma_db"
 EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 
-# -----------------------------
+# -----------------------------------
 # Embeddings
-# -----------------------------
+# -----------------------------------
 
 embeddings = HuggingFaceEmbeddings(
     model_name=EMBEDDING_MODEL
 )
 
-# -----------------------------
-# Chroma Vector Store
-# -----------------------------
+# -----------------------------------
+# Chroma Database
+# -----------------------------------
 
 vectordb = Chroma(
     persist_directory=DB_DIR,
     embedding_function=embeddings
 )
 
-# -----------------------------
-# Groq LLM
-# -----------------------------
+print("DB Path:", os.path.abspath(DB_DIR))
+print("Document Count:", vectordb._collection.count())
+
+# -----------------------------------
+# LLM
+# -----------------------------------
 
 llm = ChatGroq(
     model="llama-3.1-8b-instant",
     temperature=0.2
 )
 
-# -----------------------------
+# -----------------------------------
 # Local Search
-# -----------------------------
+# -----------------------------------
 
-def search_lore(query: str):
+
+ 
+
+
+def search_lore(query):
 
     try:
 
         results = vectordb.similarity_search_with_score(
             query,
-            k=3
+            k=1
         )
 
         if not results:
             return None
 
-        relevant_docs = []
+        doc, score = results[0]
 
-        for doc, score in results:
+        content = doc.page_content
+
+        print(f"\nBest Match Score: {score}")
+
+        print("\nRetrieved Context:")
+        print(content[:300])
+
+        # Similarity threshold
+
+        if score > 1.2:
 
             print(
-                f"Match Score: {score}"
+                "No strong local match found."
             )
 
-            # Lower score = better match
-            if score < 1.0:
-
-                relevant_docs.append(
-                    doc.page_content
-                )
-
-        if not relevant_docs:
             return None
 
-        return "\n\n".join(
-            relevant_docs
-        )
+        # Extract important query words
+
+        stop_words = {
+            "who", "what", "where",
+            "when", "tell", "about",
+            "is", "the", "a", "an"
+        }
+
+        query_words = [
+            word.lower()
+            for word in query.split()
+            if word.lower() not in stop_words
+        ]
+
+        content_lower = content.lower()
+
+        # Verify at least one keyword exists
+        if not any(
+            word in content_lower
+            for word in query_words
+        ):
+
+            print(
+                "Keyword not found in local document."
+            )
+
+            return None
+
+        return content
 
     except Exception as e:
 
         print(
-            "Search Error:",
+            "Retrieval Error:",
             str(e)
         )
 
         return None
 
 
-# -----------------------------
+# -----------------------------------
 # Main Ask Function
-# -----------------------------
+# -----------------------------------
 
-def ask(question: str):
+def ask(question):
 
     context = search_lore(question)
 
-    source = "📚 Local Knowledge Base"
+    if context:
 
-    # -----------------------------
-    # DuckDuckGo Fallback
-    # -----------------------------
+        source = "📚 Local Knowledge Base"
 
-    if context is None:
+    else:
 
-        print(
-            "Using DuckDuckGo Search..."
-        )
+        print("\nUsing Web Search...")
 
         try:
 
             search = DuckDuckGoSearchRun()
 
-            context = search.run(
-                f"""
-Anime or gaming lore question:
+            context = search.run(question)
 
-{question}
-
-Provide accurate factual information.
-"""
-            )
-
-            source = "🌐 DuckDuckGo Search"
+            source = "🌐 Web Search"
 
             if (
                 not context
                 or len(context.strip()) < 20
             ):
 
-                context = f"""
-No useful search results were found.
-
-User Question:
-{question}
-
-Provide the best answer using anime
-and gaming knowledge.
-"""
-
-                source = "🤖 Groq Model Knowledge"
+                context = (
+                    f"Question: {question}"
+                )
 
         except Exception as e:
 
-            import traceback
-
             print(
-                "\n========== WEB SEARCH ERROR =========="
+                "Web Search Error:",
+                str(e)
             )
 
-            traceback.print_exc()
-
-            print(
-                "=====================================\n"
+            context = (
+                f"Question: {question}"
             )
 
-            context = f"""
-No external search results were available.
-
-User Question:
-{question}
-
-Provide the best answer using general
-anime and gaming knowledge.
-"""
-
-            source = "🤖 Groq Model Knowledge"
-
-    # -----------------------------
-    # Prompt
-    # -----------------------------
+            source = "🌐 Web Search"
 
     prompt = f"""
 You are GameLore Agent.
 
-You are an expert on:
-
-- Naruto
-- Boruto
-- Jujutsu Kaisen
-- Demon Slayer
-- Bleach
-- One Piece
-- Dragon Ball
-- Elden Ring
-- Anime Lore
-- Gaming Lore
-
-Instructions:
-
-1. Use the supplied context.
-2. Answer clearly and accurately.
-3. Explain powers, abilities,
-   history, and significance.
-4. Use paragraphs for readability.
-5. Use bullet points when useful.
-6. If information is limited,
-   explain what is known.
-7. Do not invent unsupported facts.
+Rules:
+1. Use the provided context.
+2. Be accurate and concise.
+3. Do not invent facts.
+4. If information is limited, clearly say so.
 
 Context:
 
@@ -215,22 +192,14 @@ Question:
 Answer:
 """
 
-    # -----------------------------
-    # LLM Response
-    # -----------------------------
+    response = llm.invoke(prompt)
 
-    response = llm.invoke(
-        prompt
-    )
-
-    answer = response.content.strip()
+    answer = response.content
 
     if not answer:
 
         answer = (
-            "I couldn't find enough "
-            "information to answer "
-            "that question."
+            "I couldn't generate a response."
         )
 
     return {
@@ -238,18 +207,15 @@ Answer:
         "source": source
     }
 
-
-# -----------------------------
-# Flask Agent Wrapper
-# -----------------------------
+# -----------------------------------
+# Flask Wrapper
+# -----------------------------------
 
 class GameLoreAgent:
 
     def invoke(self, data):
 
-        question = data[
-            "messages"
-        ][0]["content"]
+        question = data["messages"][0]["content"]
 
         result = ask(question)
 
@@ -263,21 +229,30 @@ class GameLoreAgent:
             "source": result["source"]
         }
 
+agent = GameLoreAgent()
+
+# -----------------------------------
+# Agent Instance
+# -----------------------------------
 
 agent = GameLoreAgent()
 
+# -----------------------------------
+# Module-level invoke
+# -----------------------------------
 
-# -----------------------------
+def invoke(data):
+    return agent.invoke(data)
+
+# -----------------------------------
 # Local Testing
-# -----------------------------
+# -----------------------------------
 
 if __name__ == "__main__":
 
     while True:
 
-        question = input(
-            "\nAsk: "
-        )
+        question = input("\nAsk: ")
 
         if question.lower() in [
             "quit",
@@ -287,18 +262,9 @@ if __name__ == "__main__":
 
         result = ask(question)
 
-        print(
-            "\nSource:"
-        )
+        print("\nSource:")
+        print(result["source"])
 
-        print(
-            result["source"]
-        )
+        print("\nAnswer:")
+        print(result["answer"])
 
-        print(
-            "\nAnswer:"
-        )
-
-        print(
-            result["answer"]
-        )

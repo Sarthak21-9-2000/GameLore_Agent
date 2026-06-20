@@ -1,7 +1,7 @@
 
 from flask import Flask, render_template, request
 
-from agent import agent
+import agent
 
 app = Flask(__name__)
 
@@ -24,7 +24,11 @@ def home():
 
             try:
 
-                response = agent.invoke(
+                invoker = getattr(agent, "invoke", None) or getattr(agent, "run", None)
+                if invoker is None:
+                    raise AttributeError("Agent module has no callable 'invoke' or 'run'.")
+
+                response = invoker(
                     {
                         "messages": [
                             {
